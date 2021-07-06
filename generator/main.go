@@ -225,8 +225,17 @@ var funcMap = template.FuncMap{
 
 var tmpls = map[string]string{
 	"xPtr_x": `func {{.From | ToName}}_{{.To | ToName}}(i {{.From}}, opt ...Option) {{.To}} {
-	if len(opt) == 1 && opt[0] == UseDefaultEmpty && i == nil {
-		return *new({{.To}})
+	setting := &Setting{}
+	for _, f := range opt {
+		f(setting)
+	}
+	if i == nil {
+		if setting.UseDefaultEmpty {
+			return *new({{.To}})
+		}
+		if setting.CustomValue != nil {
+			return setting.CustomValue.({{.To}})
+		}
 	}
 	return *i
 }

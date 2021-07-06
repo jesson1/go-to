@@ -1,7 +1,17 @@
 package to
 
-type Option int
+type Setting struct {
+	UseDefaultEmpty bool
+	CustomValue     interface{}
+}
 
-const (
-	UseDefaultEmpty Option = iota
-)
+type Option func(setting *Setting)
+
+func UseDefaultEmpty(setting *Setting) {
+	setting.UseDefaultEmpty = true
+}
+func UseCustomValueWrapper(customValue interface{}) Option {
+	return func(setting *Setting) {
+		setting.CustomValue = customValue
+	}
+}
