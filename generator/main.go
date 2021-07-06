@@ -225,8 +225,17 @@ var funcMap = template.FuncMap{
 
 var tmpls = map[string]string{
 	"xPtr_x": `func {{.From | ToName}}_{{.To | ToName}}(i {{.From}}, opt ...Option) {{.To}} {
-	if len(opt) == 1 && opt[0] == UseDefaultEmpty && i == nil {
-		return *new({{.To}})
+	setting := &Setting{}
+	for _, f := range opt {
+		f(setting)
+	}
+	if i == nil {
+		if setting.UseDefaultEmpty {
+			return *new({{.To}})
+		}
+		if setting.CustomValue != nil {
+			return setting.CustomValue.({{.To}})
+		}
 	}
 	return *i
 }
@@ -250,11 +259,37 @@ var tmpls = map[string]string{
 }
 `,
 	"xPtr_y": `func {{.From | ToName}}_{{.To | ToName}}(i {{.From}}, opt ...Option) {{.To}} {
-	return {{.From | ToNoPtrName}}_{{.To | ToName}}({{.From | ToPtrName}}_{{.From | ToNoPtrName}}(i, opt...))
+	setting := &Setting{}
+	for _, f := range opt {
+		f(setting)
+	}
+	if i == nil {
+		if setting.UseDefaultEmpty {
+			return *new({{.To}})
+		}
+		if setting.CustomValue != nil {
+			return setting.CustomValue.({{.To}})
+		}
+		return {{.From | ToNoPtrName}}_{{.To | ToName}}(*i)
+	}
+	return {{.From | ToNoPtrName}}_{{.To | ToName}}({{.From | ToPtrName}}_{{.From | ToNoPtrName}}(i))
 }
 `,
 	"xPtr_yPtr": `func {{.From | ToName}}_{{.To | ToName}}(i {{.From}}, opt ...Option) {{.To}} {
-		return {{.To | ToNoPtrName}}_{{.To | ToPtrName}}({{.From | ToNoPtrName}}_{{.To | ToNoPtrName}}({{.From | ToPtrName}}_{{.From | ToNoPtrName}}(i, opt...)))
+	setting := &Setting{}
+	for _, f := range opt {
+		f(setting)
+	}
+	if i == nil {
+		if setting.UseDefaultEmpty {
+			return *new({{.To}})
+		}
+		if setting.CustomValue != nil {
+			return setting.CustomValue.({{.To}})
+		}
+		return {{.To | ToNoPtrName}}_{{.To | ToPtrName}}({{.From | ToNoPtrName}}_{{.To | ToNoPtrName}}(*i))
+	}
+	return {{.To | ToNoPtrName}}_{{.To | ToPtrName}}({{.From | ToNoPtrName}}_{{.To | ToNoPtrName}}({{.From | ToPtrName}}_{{.From | ToNoPtrName}}(i)))
 }
 `,
 	"Test": `func Test_{{.From | ToName}}_{{.To | ToName}}(t *testing.T) {
